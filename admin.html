@@ -48,6 +48,12 @@
 <section id="login" class="masthead">
   <h1>Showcase admin</h1>
   <p class="sub">Paste a GitHub fine-grained token with <b>Contents: read and write</b> on <code>sgc4e.github.io</code> and <code>github-showcase-data</code>, and <b>Metadata: read</b> on all repositories. It stays in this browser only.</p>
+  <ol class="sub">
+    <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a token on GitHub</a>. Name it "showcase admin", owner sgc4e.</li>
+    <li>Repository access: <b>Only select repositories</b>, then pick <code>sgc4e.github.io</code> and <code>github-showcase-data</code>.</li>
+    <li>Permissions: Repository permissions, then <b>Contents: Read and write</b>.</li>
+    <li>Generate, copy, paste below.</li>
+  </ol>
   <p><input id="token" type="password" placeholder="github_pat_…" autocomplete="off" style="width:min(100%,420px)"> <button class="primary" id="go">Open</button></p>
 </section>
 
