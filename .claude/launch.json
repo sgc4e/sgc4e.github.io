@@ -1,0 +1,1 @@
+{"version":"0.0.1","configurations":[{"name":"showcase","runtimeExecutable":"python3","runtimeArgs":["-m","http.server","8791","--directory","/Users/sg/Documents/Claude/Projects/sg-github-showcase"],"port":8791}]}
