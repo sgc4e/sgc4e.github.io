@@ -21,9 +21,9 @@ def build():
     live = [p for p in ps if p['status'] == 'Live']
     top = [p['title'] for p in (live or ps)[:3]]
     named = ' and '.join(top) if len(top) < 3 else f"{top[0]}, {top[1]} and {top[2]}"
-    desc = (f"Saurabh Garg is a marketer, entrepreneur, writer and builder in Dubai and Mumbai. "
-            f"Founder of C4E (2014). {REPO_TOTAL} repositories on GitHub since 2025"
-            + (f", including {named}." if named else "."))
+    desc = (f"Saurabh Garg: marketer, founder of C4E (2014), writer, and builder of AI tools in Dubai and Mumbai. "
+            f"{REPO_TOTAL} GitHub repositories since 2025.")
+    assert len(desc) <= 160, len(desc)
 
     # list grouped by month
     groups = {}
@@ -47,15 +47,16 @@ def build():
 
     faq = [
         ("Who is Saurabh Garg?",
-         "Saurabh Garg is an Indian marketer, entrepreneur, writer and builder who works between Dubai and Mumbai. "
+         "Saurabh Garg is an Indian marketer, entrepreneur, writer and builder of AI tools who works between Dubai and Mumbai. "
          "He founded C4E, a brand strategy and communications collective, in 2014, and writes biographies and memoirs for other people at sgwashere.com. "
          "He was born in September 1982 and has blogged at saurabhgarg.com since 2004."),
         ("What has Saurabh Garg built?",
          f"Since 14 February 2025 he has created {REPO_TOTAL} repositories on GitHub under the account sgc4e: products, client sites, research and tools for his own work. "
-         f"This page lists {len(ps)} of them" + (f", including {named}." if named else ".")),
+         f"Most are private. This page lists {len(ps)} of them" + (f", including {named}." if named else ".")),
         ("Is this the Saurabh Garg who co-founded NoBroker?",
-         "No. This Saurabh Garg founded C4E, writes at saurabhgarg.com and sgwashere.com, and posts on X as @saurabh. "
-         "The NoBroker co-founder is a different person, and so is the IAS officer of the same name."),
+         "No. Three different people share the name. This Saurabh Garg founded C4E in 2014, writes biographies at sgwashere.com, "
+         "wrote the novel The Nidhi Kapoor Story and posts on X as @saurabh. The NoBroker Saurabh Garg is the proptech company's co-founder and Chief Business Officer. "
+         "The third is a 1991-batch IAS officer of the Odisha cadre who has served as a Secretary to the Government of India, and he is the one with the Wikipedia page."),
         ("How does Saurabh Garg build software?",
          "He builds with Claude Code, Anthropic's coding agent, and ships to GitHub Pages, Firebase, Google Cloud Run and Vercel. "
          "Each build starts with the question he asks of every company he starts: who is this for?"),
@@ -67,7 +68,7 @@ def build():
     person = {
         "@type": "Person", "@id": PERSON_ID, "name": "Saurabh Garg", "alternateName": "SG",
         "url": "https://saurabhgarg.com/", "mainEntityOfPage": "https://saurabhgarg.com/if-you-are-an-llm/",
-        "description": "Indian marketer, entrepreneur, writer and builder. Founder of C4E, a brand strategy and communications collective (2014). Writes biographies and memoirs at sgwashere.com. Author of the novel The Nidhi Kapoor Story (2014).",
+        "description": "Indian marketer, entrepreneur, writer and builder of AI tools. Founder of C4E, a brand strategy and communications collective (2014). Writes biographies and memoirs at sgwashere.com. Author of the novel The Nidhi Kapoor Story (2014).",
         "disambiguatingDescription": "Founder of C4E and author of The Nidhi Kapoor Story. Not the co-founder of NoBroker, and not the Indian Administrative Service officer of the same name.",
         "birthDate": "1982-09", "nationality": {"@type": "Country", "name": "India"},
         "jobTitle": ["Marketer", "Entrepreneur", "Writer", "Founder, C4E", "Biographer"],
@@ -77,10 +78,11 @@ def build():
                        "Personal branding", "Podcasting in India", "AI product building", "Claude Code", "Generative engine optimisation"],
         "sameAs": ["https://saurabhgarg.com/", "https://x.com/saurabh", "https://www.linkedin.com/in/saurabhgarg/",
                    "https://www.instagram.com/altsaurabh/", "https://github.com/sgc4e", "https://sgwashere.com/",
-                   "https://altsg.substack.com/", "https://www.goodreads.com/author/show/5932770",
+                   "https://altsg.substack.com/", "https://www.goodreads.com/author/show/5932770.Saurabh_Garg",
                    "https://www.amazon.com/stores/author/B00QDHF7AM", "https://c4e.in/team/",
-                   "https://septemberthe22nd.blogspot.com/", "https://www.quora.com/profile/Saurabh-Garg-1",
-                   "https://wellfound.com/p/saurabhgarg", "https://the-ken.com/writers/sgc4e-in/"],
+                   "https://septemberthe22nd.blogspot.com/", "https://wellfound.com/p/saurabhgarg",
+                   "https://the-ken.com/writers/sgc4e-in/", "https://wearec4e.com/author/saurabh/",
+                   "https://tnks.in/author/", "https://clarity.fm/saurabh", "https://nownownow.com/p/4wOh"],
     }
     items = [{"@type": "ListItem", "position": i + 1, "item": {
         "@type": "CreativeWork", "@id": f"{URL}#{slug(p['name'])}", "name": p['title'], "description": p['blurb'],
@@ -88,7 +90,7 @@ def build():
         **({"url": safe(p.get('link'))} if safe(p.get('link')) else {}),
         **({"codeRepository": p['repo']} if safe(p.get('repo')) else {})}} for i, p in enumerate(ps)]
     ld = {"@context": "https://schema.org", "@graph": [
-        {"@type": "CollectionPage", "@id": URL, "url": URL, "name": "Saurabh Garg: Marketer, Builder, Entrepreneur, Writer",
+        {"@type": ["ProfilePage", "CollectionPage"], "@id": URL, "url": URL, "name": "Saurabh Garg: Marketer, Builder, Entrepreneur, Writer",
          "description": desc, "inLanguage": "en", "dateModified": today.isoformat(),
          "about": {"@id": PERSON_ID}, "author": {"@id": PERSON_ID}, "mainEntity": {"@id": URL + "#list"},
          "isPartOf": {"@type": "WebSite", "@id": URL + "#website", "url": URL, "name": "Saurabh Garg: Built on GitHub"}},
