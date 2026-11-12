@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /admin.html
+
+Sitemap: https://sgc4e.github.io/sitemap.xml
