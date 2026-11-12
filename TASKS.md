@@ -14,7 +14,7 @@ Public page at sgc4e.github.io listing everything SG has built on GitHub since F
 - [x] Baseline of AI and Google answers for "Saurabh Garg": research/baseline-2026-11-12.md (2026-11-12)
 - [ ] Link sgc4e.github.io from saurabhgarg.com/if-you-are-an-llm/
 - [x] GitHub profile README live at github.com/sgc4e (2026-11-12)
-- [ ] GitHub profile name and bio: needs the gh "user" scope, SG to grant
+- [x] GitHub profile name "Saurabh Garg", bio and location set (2026-11-12)
 - [ ] Wikidata item for SG, "different from" Q114243423 (SG to create; needs his account)
 - [ ] Switch on more cards so the page proves the builder claim
 - [ ] Re-run the baseline queries in 4 weeks (around 10 Dec 2026)
