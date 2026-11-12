@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Showcase admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  body { font-size: 16px; }
+  .page, .site { max-width: 1100px; }
+  input, textarea, select, button { font: 14px/1.4 var(--mono); color: var(--ink); background: transparent; border: 1px solid var(--rule); padding: 6px 8px; }
+  button { cursor: pointer; border-color: var(--ink); }
+  button.primary { background: var(--ink); color: var(--bg); }
+  button:disabled { opacity: .4; cursor: default; }
+  textarea { width: 100%; resize: vertical; font-family: var(--serif); font-size: 16px; }
+  label { font: 12px var(--mono); color: var(--muted); display: block; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--bg); z-index: 2; }
+  .bar .grow { flex: 1; min-width: 160px; }
+  #msg { font: 13px var(--mono); color: var(--muted); }
+  #msg.err { color: var(--accent); }
+  .row { display: grid; grid-template-columns: 70px 1fr; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+  .row.off { opacity: .55; }
+  .row .fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .row .fields .wide { grid-column: 1 / -1; }
+  .row .fields input, .row .fields select { width: 100%; }
+  .toggle { font: 12px var(--mono); text-align: center; }
+  .toggle input { width: 22px; height: 22px; display: block; margin: 0 auto 4px; accent-color: var(--live); }
+  .note { font: 12px var(--mono); color: var(--accent); }
+  .repo { font: 12px var(--mono); color: var(--muted); }
+  .site-fields { display: grid; gap: 8px; padding: 20px 0; border-bottom: 1px solid var(--ink); }
+  .site-fields input { width: 100%; }
+  @media (max-width: 700px) { .row .fields { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="site">
+  <a class="brand" href="./">Saurabh Garg</a>
+  <span class="tag">Admin</span>
+</header>
+<main class="page">
+
+<section id="login" class="masthead">
+  <h1>Showcase admin</h1>
+  <p class="sub">Paste a GitHub fine-grained token with <b>Contents: read and write</b> on <code>sgc4e.github.io</code> and <code>github-showcase-data</code>, and <b>Metadata: read</b> on all repositories. It stays in this browser only.</p>
+  <p><input id="token" type="password" placeholder="github_pat_…" size="50" autocomplete="off"> <button class="primary" id="go">Open</button></p>
+</section>
+
+<section id="app" hidden>
+  <div class="site-fields">
+    <label>Kicker <input data-site="kicker"></label>
+    <label>Headline <input data-site="headline"></label>
+    <label>Intro <textarea data-site="intro" rows="3"></textarea></label>
+    <label>Closing line <input data-site="closer"></label>
+  </div>
+  <div class="bar">
+    <input id="q" class="grow" placeholder="Search title, repo, blurb">
+    <select id="view"><option value="all">All</option><option value="on">Shown</option><option value="off">Hidden</option><option value="flag">Flagged</option></select>
+    <button id="sync" title="Add repos created since the last sync">Sync new repos</button>
+    <button id="save" class="primary" disabled>Save and publish</button>
+    <span id="msg"></span>
+    <button id="logout" title="Forget the token in this browser">Forget token</button>
+  </div>
+  <div id="rows"></div>
+</section>
+
+</main>
+<script>
+const OWNER = 'sgc4e', PUB = 'sgc4e.github.io', DATA = 'github-showcase-data';
+const CATS = ['Products', 'Client work', 'Tools & automations', 'Research & data', 'Writing & content', 'Forks & experiments'];
+const STATUSES = ['Live', 'Building', 'Parked', 'Retired'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token = '', data = null, sha = {}, dirty = false;
+
+function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} }
+function load(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function say(t, err) { $('msg').textContent = t; $('msg').className = err ? 'err' : ''; }
+function setDirty(d) { dirty = d; $('save').disabled = !d; if (d) say('Unsaved changes'); }
+
+async function gh(path, opts = {}) {
+  const r = await fetch('https://api.github.com' + path, { ...opts, headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) } });
+  if (!r.ok) throw new Error(`${r.status} on ${path}: ${(await r.json().catch(() => ({}))).message || r.statusText}`);
+  return r.status === 204 ? null : r.json();
+}
+const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, '')), c => c.charCodeAt(0)));
+function b64enc(str) { const b = new TextEncoder().encode(str); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
+
+async function getFile(repo, path) { const f = await gh(`/repos/${OWNER}/${repo}/contents/${path}`); sha[repo + path] = f.sha; return JSON.parse(b64dec(f.content)); }
+async function putFile(repo, path, obj, message) {
+  const body = { message, content: b64enc(JSON.stringify(obj, null, 2) + '\n'), sha: sha[repo + path] };
+  const r = await gh(`/repos/${OWNER}/${repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
+  sha[repo + path] = r.content.sha;
+}
+
+async function open() {
+  token = $('token').value.trim() || load('gh_token') || '';
+  if (!token) return;
+  try {
+    data = await getFile(DATA, 'data.json');
+    store('gh_token', token);
+    $('login').hidden = true; $('app').hidden = false;
+    document.querySelectorAll('[data-site]').forEach(el => el.value = data.site[el.dataset.site] || '');
+    draw(); say(`${data.projects.filter(p => p.show).length} of ${data.projects.length} shown`);
+  } catch (e) { $('login').querySelector('.sub').insertAdjacentHTML('afterend', `<p class="note">${esc(e.message)}</p>`); }
+}
+
+function draw() {
+  const q = $('q').value.toLowerCase(), v = $('view').value;
+  const list = data.projects.filter(p =>
+    (v === 'all' || (v === 'on' && p.show) || (v === 'off' && !p.show) || (v === 'flag' && p.flag)) &&
+    (!q || [p.title, p.name, p.blurb].join(' ').toLowerCase().includes(q))
+  ).sort((a, b) => b.date.localeCompare(a.date));
+  $('rows').innerHTML = list.map(p => {
+    const i = data.projects.indexOf(p);
+    const opt = (arr, cur) => arr.map(o => `<option${o === cur ? ' selected' : ''}>${esc(o)}</option>`).join('');
+    return `<div class="row${p.show ? '' : ' off'}" data-i="${i}">
+      <label class="toggle"><input type="checkbox" data-k="show"${p.show ? ' checked' : ''}>${p.show ? 'Shown' : 'Hidden'}</label>
+      <div class="fields">
+        <div class="wide repo">${esc(p.name)} · ${p.public ? 'public repo' : 'private repo'} · created ${esc(p.date)}</div>
+        ${p.flag ? `<div class="wide note">Check before showing: ${esc(p.flag)}</div>` : ''}
+        <label class="wide">Title <input data-k="title" value="${esc(p.title)}"></label>
+        <label class="wide">Blurb <textarea data-k="blurb" rows="2">${esc(p.blurb)}</textarea></label>
+        <label>Category <select data-k="category">${opt(CATS, p.category)}</select></label>
+        <label>Status <select data-k="status">${opt(STATUSES, p.status)}</select></label>
+        <label>Date <input type="date" data-k="date" value="${esc(p.date)}"></label>
+        <label class="wide">Live link <input type="url" data-k="link" value="${esc(p.link || '')}" placeholder="https://"></label>
+      </div></div>`;
+  }).join('') || '<p class="empty">No matches.</p>';
+}
+
+$('rows').addEventListener('input', e => {
+  const el = e.target, row = el.closest('.row'); if (!row || !el.dataset.k) return;
+  const p = data.projects[row.dataset.i];
+  p[el.dataset.k] = el.type === 'checkbox' ? el.checked : (el.value.trim() || (el.dataset.k === 'link' ? null : el.value));
+  if (el.dataset.k === 'show') { row.classList.toggle('off', !el.checked); el.parentElement.lastChild.textContent = el.checked ? 'Shown' : 'Hidden'; }
+  setDirty(true);
+});
+document.querySelectorAll('[data-site]').forEach(el => el.addEventListener('input', () => { data.site[el.dataset.site] = el.value; setDirty(true); }));
+$('q').oninput = draw; $('view').onchange = draw;
+
+$('sync').onclick = async () => {
+  say('Fetching your repos…');
+  try {
+    let repos = [], page = 1, batch;
+    do { batch = await gh(`/user/repos?affiliation=owner&per_page=100&page=${page++}`); repos = repos.concat(batch); } while (batch.length === 100);
+    const known = new Map(data.projects.map(p => [p.name, p]));
+    let added = 0;
+    for (const r of repos) {
+      const p = known.get(r.name);
+      if (p) { p.public = !r.private; continue; }
+      data.projects.push({ name: r.name, title: r.name, blurb: r.description || '', category: r.fork ? 'Forks & experiments' : 'Products', status: 'Building', link: r.homepage || null, date: r.created_at.slice(0, 10), public: !r.private, show: false, flag: 'New repo: write the blurb before showing' });
+      added++;
+    }
+    draw(); setDirty(true); say(`${added} new repo${added === 1 ? '' : 's'} added, hidden. Save to keep.`);
+  } catch (e) { say(e.message, true); }
+};
+
+$('save').onclick = async () => {
+  $('save').disabled = true; say('Saving…');
+  try {
+    const shown = data.projects.filter(p => p.show).map(({ name, title, blurb, category, status, link, date, public: pub }) =>
+      ({ name, title, blurb, category, status, link: link || null, date, repo: pub ? `https://github.com/${OWNER}/${name}` : null }));
+    await putFile(DATA, 'data.json', data, 'Update showcase data');
+    await putFile(PUB, 'projects.json', { site: data.site, projects: shown }, `Showcase: ${shown.length} projects shown`);
+    setDirty(false); say(`Saved. ${shown.length} shown. The live page updates in about a minute.`);
+  } catch (e) { say(e.message + (/409/.test(e.message) ? ' (changed elsewhere: reload the page)' : ''), true); $('save').disabled = false; }
+};
+
+$('logout').onclick = () => { store('gh_token', null); location.reload(); };
+$('go').onclick = open;
+$('token').onkeydown = e => { if (e.key === 'Enter') open(); };
+window.onbeforeunload = e => { if (dirty) { e.preventDefault(); return ''; } };
+if (load('gh_token')) open();
+</script>
+</body>
+</html>

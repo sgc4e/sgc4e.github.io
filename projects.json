@@ -1,0 +1,30 @@
+{
+  "site": {
+    "kicker": "Since 14 February 2025",
+    "headline": "Everything I have built on GitHub since my first commit.",
+    "intro": "The first repo was a hello world on 14 February 2025. Then nothing for eight months. Since May 2026 it has been most weeks: products, client sites, tools for my own desk, research, and a few forks I learned from. Each entry says what it is and whether it is live.",
+    "closer": "Want one of these built for you? Start at c4e.in."
+  },
+  "projects": [
+    {
+      "name": "sg-posture",
+      "title": "SG Posture",
+      "blurb": "A macOS menu-bar app that reads head motion from AirPods Pro, 3, 4 and Max. Calibrate once. It plays a sound when you slouch for 8 seconds.",
+      "category": "Products",
+      "status": "Building",
+      "link": null,
+      "date": "2026-06-13",
+      "repo": "https://github.com/sgc4e/sg-posture"
+    },
+    {
+      "name": "india-vc-exit-performance",
+      "title": "India VC Exit Performance",
+      "blurb": "A dashboard of 16 Indian VC funds. It shows who returned cash to LPs and who still holds paper marks, from IPO filings, Bain-IVCA reports and SEBI disclosures.",
+      "category": "Research & data",
+      "status": "Parked",
+      "link": null,
+      "date": "2026-05-30",
+      "repo": "https://github.com/sgc4e/india-vc-exit-performance"
+    }
+  ]
+}
